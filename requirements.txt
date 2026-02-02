@@ -1,0 +1,64 @@
+# Core Dependencies
+python-dotenv==1.0.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+
+# Document Parsing
+docling>=2.0.0
+python-docx>=1.1.2
+PyPDF2>=3.0.1
+
+# LlamaIndex and Workflows
+llama-index>=0.10.0
+llama-index-core>=0.10.0
+llama-index-embeddings-huggingface>=0.2.0
+llama-index-vector-stores-postgres>=0.1.0
+llama-index-postprocessor-cohere-rerank>=0.1.0
+
+# Embeddings (BGE-M3)
+sentence-transformers>=2.6.1
+FlagEmbedding>=1.2.10
+
+# Database
+psycopg2-binary==2.9.9
+pgvector==0.2.5
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Arabic NLP (CAMeL Tools)
+camel-tools==1.4.1
+farasa==0.0.1
+
+# LLM Integration
+openai==1.10.0
+anthropic==0.18.1
+
+# Evaluation (Ragas + G-Eval)
+ragas==0.1.7
+evaluate==0.4.1
+rouge-score==0.1.2
+bert-score==0.3.8
+
+# Web Framework
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+jinja2==3.1.3
+
+# Security and Rate Limiting
+slowapi==0.1.9
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Utilities
+httpx==0.26.0
+tenacity==8.2.3
+tqdm==4.66.1
+numpy>=1.26.3
+pandas>=2.1.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+httpx==0.26.0
