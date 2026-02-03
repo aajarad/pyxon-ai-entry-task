@@ -104,13 +104,18 @@ def normalize_arabic_text(text: str) -> str:
     """
     # Normalize alef variants
     text = re.sub(r'[أإآ]', 'ا', text)
-    
+
     # Normalize heh variants
     text = re.sub(r'[هة]', 'ة', text)
-    
+
     # Normalize yeh variants
     text = re.sub(r'[يى]', 'ي', text)
-    
+
+    # Convert tanween fathatan on alif (اً) to ta marbuta (ة)
+    text = re.sub('\u0627\u064B', 'ة', text)
+    # Handle case where tanween comes before alif (ًا)
+    text = re.sub('\u064B\u0627', 'ة', text)
+
     # Remove diacritics
     text = remove_diacritics(text)
     

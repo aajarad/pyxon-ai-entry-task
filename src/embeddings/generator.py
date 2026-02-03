@@ -48,35 +48,19 @@ class EmbeddingGenerator:
 
     def _embed_single(self, text: str) -> List[float]:
         """Generate embedding for a single text."""
-        if hasattr(self.model, 'encode'):
-            # SentenceTransformer
-            embedding = self.model.encode(text)
-            return embedding.tolist()
-        else:
-            # Fallback
-            embedding = self.model.encode(text)
-            return embedding.tolist()
+        embedding = self.model.encode(text)
+        return embedding.tolist()
 
     def _embed_batch(
         self, texts: List[str], batch_size: int
     ) -> List[List[float]]:
         """Generate embeddings for multiple texts."""
-        embeddings = []
-        
+        embeddings: List[List[float]] = []
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
-            
-            if hasattr(self.model, 'encode'):
-                # FlagEmbedding
-                result = self.model.encode(batch, return_dense=True)
-                if isinstance(result, dict):
-                    result = result['dense_vecs']
-                embeddings.extend(result.tolist())
-            else:
-                # SentenceTransformer
-                result = self.model.encode(batch)
-                embeddings.extend(result.tolist())
-        
+            result = self.model.encode(batch, show_progress_bar=False)
+            # SentenceTransformer returns a numpy array
+            embeddings.extend(result.tolist())
         return embeddings
 
     def embed_chunks(self, chunks: List) -> List:

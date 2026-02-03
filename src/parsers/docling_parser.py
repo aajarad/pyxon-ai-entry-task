@@ -37,15 +37,23 @@ class DoclingParser:
         
         # Determine file type
         file_type = self._get_file_type(path.suffix)
-        
-        # Convert document
-        result = self.converter.convert(file_path)
-        
-        # Extract content and metadata
-        content = result.document.export_to_markdown()
-        
-        # Extract metadata
-        metadata = self._extract_metadata(result, content, path)
+        # Special handling for plain text: read directly
+        if file_type == DocumentType.TXT:
+            content = path.read_text(encoding="utf-8")
+            metadata = DocumentMetadata(
+                title=path.stem,
+                word_count=len(content.split()),
+            )
+            metadata.has_arabic = detect_arabic(content)
+            metadata.has_diacritics = detect_diacritics(content)
+            metadata.language = "ar" if metadata.has_arabic else "en"
+        else:
+            # Convert document via Docling
+            result = self.converter.convert(file_path)
+            # Extract content and metadata
+            content = result.document.export_to_markdown()
+            # Extract metadata
+            metadata = self._extract_metadata(result, content, path)
         
         # Create document object
         document = Document(

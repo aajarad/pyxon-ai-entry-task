@@ -8,6 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.database.connection import db_manager
 from src.benchmarks.suite import BenchmarkSuite
+from src.processor.document_processor import DocumentProcessor
 
 
 def main():
@@ -18,6 +19,38 @@ def main():
     # Initialize database
     db_manager.init_db()
     session = db_manager.get_session()
+    
+    # If database is empty, ingest sample documents first
+    try:
+        from sqlalchemy import text as _text
+        docs = session.execute(_text("SELECT COUNT(*) FROM documents")).scalar() or 0
+        chunks = session.execute(_text("SELECT COUNT(*) FROM chunks")).scalar() or 0
+        if docs == 0 or chunks == 0:
+            print("No documents/chunks found. Ingesting sample documents...")
+            processor = DocumentProcessor(session)
+            samples_dir = Path(__file__).parent.parent / "sample_documents"
+            candidates = [
+                samples_dir / "english_sample.txt",
+                samples_dir / "arabic_with_diacritics.txt",
+            ]
+            for p in candidates:
+                if p.exists():
+                    try:
+                        # Use process_text for .txt, parse_file otherwise
+                        if p.suffix.lower() == ".txt":
+                            result = processor.process_text(p.read_text(encoding="utf-8"), filename=p.name, chunking_strategy="auto")
+                        else:
+                            result = processor.process_file(str(p), chunking_strategy="auto")
+                        if not result.success:
+                            print(f"Warning: failed to process {p.name}: {result.error}")
+                    except Exception as e:
+                        print(f"Warning: error ingesting {p.name}: {e}")
+            # Refresh counts
+            docs = session.execute(_text("SELECT COUNT(*) FROM documents")).scalar() or 0
+            chunks = session.execute(_text("SELECT COUNT(*) FROM chunks")).scalar() or 0
+            print(f"Documents: {docs}, Chunks: {chunks}")
+    except Exception as e:
+        print(f"Warning: could not check/ingest samples: {e}")
     
     # Create benchmark suite
     suite = BenchmarkSuite(session)

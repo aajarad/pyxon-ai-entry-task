@@ -49,9 +49,6 @@ logs/
 # Uploads
 uploads/
 
-# Benchmark results
-benchmark_report.md
-
 # OS
 .DS_Store
 Thumbs.db

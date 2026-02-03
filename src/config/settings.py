@@ -2,7 +2,7 @@
 
 import logging
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import validator, Field
+from pydantic import Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +14,17 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",
     )
 
     # Database
     database_url: str = Field(
-        default="postgresql://user:password@localhost:5432/pyxon_docs",
+        default="postgresql://pyxon:pyxon@localhost:5432/pyxon_docs",
         description="PostgreSQL database connection URL"
     )
     pgvector_extension: bool = True
 
-    @validator('database_url')
+    @field_validator('database_url')
     def validate_database_url(cls, v):
         """Validate database URL format."""
         if not v or not v.startswith(('postgresql://', 'postgresql+')):
@@ -48,14 +49,14 @@ class Settings(BaseSettings):
     chunk_overlap: int = 50
     batch_size: int = 32
 
-    @validator('max_file_size')
+    @field_validator('max_file_size')
     def validate_max_file_size(cls, v):
         """Validate max file size."""
         if v < 1024 or v > 100 * 1024 * 1024:  # Min 1KB, Max 100MB
             raise ValueError("max_file_size must be between 1KB and 100MB")
         return v
 
-    @validator('chunk_size')
+    @field_validator('chunk_size')
     def validate_chunk_size(cls, v):
         """Validate chunk size."""
         if v < 100 or v > 2000:
@@ -66,7 +67,7 @@ class Settings(BaseSettings):
     demo_port: int = Field(default=8000, description="Port for demo server")
     demo_host: str = Field(default="0.0.0.0", description="Host for demo server")
 
-    @validator('demo_port')
+    @field_validator('demo_port')
     def validate_demo_port(cls, v):
         """Validate demo port."""
         if v < 1 or v > 65535:

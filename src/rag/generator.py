@@ -43,7 +43,13 @@ class AnswerGenerator:
             Generated answer
         """
         model = model or settings.llm_model
-        
+
+        # If no API clients are configured, return a simple extractive fallback
+        if not self.openai_client and not self.anthropic_client:
+            context_texts = [c for c in context if c]
+            joined = "\n\n".join(context_texts)[:800]
+            return joined if joined else "No relevant information found."
+
         # Format context
         context_text = "\n\n".join([f"Context {i+1}:\n{c}" for i, c in enumerate(context)])
         
@@ -60,11 +66,25 @@ Please provide a comprehensive answer based on the context above. If the context
         
         # Generate answer based on model
         if model.startswith("gpt"):
-            return self._generate_openai(prompt, model, temperature, max_tokens)
+            try:
+                return self._generate_openai(prompt, model, temperature, max_tokens)
+            except Exception:
+                # Fallback extractive answer
+                context_texts = [c for c in context if c]
+                joined = "\n\n".join(context_texts)[:800]
+                return joined if joined else "No relevant information found."
         elif model.startswith("claude"):
-            return self._generate_anthropic(prompt, model, temperature, max_tokens)
+            try:
+                return self._generate_anthropic(prompt, model, temperature, max_tokens)
+            except Exception:
+                context_texts = [c for c in context if c]
+                joined = "\n\n".join(context_texts)[:800]
+                return joined if joined else "No relevant information found."
         else:
-            raise ValueError(f"Unsupported model: {model}")
+            # Unknown model -> fallback
+            context_texts = [c for c in context if c]
+            joined = "\n\n".join(context_texts)[:800]
+            return joined if joined else "No relevant information found."
 
     def _generate_openai(
         self, prompt: str, model: str, temperature: float, max_tokens: int
@@ -120,7 +140,13 @@ Please provide a comprehensive answer based on the context above. If the context
             Generated Arabic answer
         """
         model = model or settings.llm_model
-        
+
+        # If no API clients are configured, return a simple extractive fallback in Arabic
+        if not self.openai_client and not self.anthropic_client:
+            context_texts = [c for c in context if c]
+            joined = "\n\n".join(context_texts)[:800]
+            return joined if joined else "لم يتم العثور على معلومات ذات صلة."
+
         # Format context
         context_text = "\n\n".join([f"السياق {i+1}:\n{c}" for i, c in enumerate(context)])
         
@@ -137,11 +163,23 @@ Please provide a comprehensive answer based on the context above. If the context
         
         # Generate answer
         if model.startswith("gpt"):
-            return self._generate_openai(prompt, model, 0.7, 500)
+            try:
+                return self._generate_openai(prompt, model, 0.7, 500)
+            except Exception:
+                context_texts = [c for c in context if c]
+                joined = "\n\n".join(context_texts)[:800]
+                return joined if joined else "لم يتم العثور على معلومات ذات صلة."
         elif model.startswith("claude"):
-            return self._generate_anthropic(prompt, model, 0.7, 500)
+            try:
+                return self._generate_anthropic(prompt, model, 0.7, 500)
+            except Exception:
+                context_texts = [c for c in context if c]
+                joined = "\n\n".join(context_texts)[:800]
+                return joined if joined else "لم يتم العثور على معلومات ذات صلة."
         else:
-            raise ValueError(f"Unsupported model: {model}")
+            context_texts = [c for c in context if c]
+            joined = "\n\n".join(context_texts)[:800]
+            return joined if joined else "لم يتم العثور على معلومات ذات صلة."
 
 
 # Global answer generator instance

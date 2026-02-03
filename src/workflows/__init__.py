@@ -1,9 +1,7 @@
 """LlamaIndex Workflows integration."""
 
-from src.workflows.document_workflow import (
-    DocumentProcessingWorkflow,
-    process_document_with_workflow,
-)
+# Avoid importing heavy/optional dependencies at package import time.
+# Consumers should import the required symbols directly from document_workflow.
 
 __all__ = [
     "DocumentProcessingWorkflow",

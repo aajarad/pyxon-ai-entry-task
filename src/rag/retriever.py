@@ -4,9 +4,11 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select, text
 import numpy as np
+import re
 
 from src.database.models import ChunkModel
 from src.embeddings.generator import get_embedding_generator
+from src.utils.text_utils import remove_diacritics
 
 
 class VectorRetriever:
@@ -156,59 +158,31 @@ class VectorRetriever:
     ) -> List[ChunkModel]:
         """Simple keyword-based search."""
         # Extract keywords from query
-        keywords = query.lower().split()
-        
-        # Build SQL query
-        sql = """
-        SELECT c.*,
-            (
-                SELECT COUNT(*)
-                FROM unnest(string_to_array(lower(c.content), ' ')) word
-                WHERE word = ANY(:keywords)
-            ) as keyword_count
-        FROM chunks c
-        WHERE 1=1
-        """
-        
-        params = {"keywords": keywords}
-        
+        keywords = [k for k in query.lower().split() if k]
+
+        # Fetch candidates and score in Python (diacritic-insensitive, dialect-agnostic)
+        q = self.session.query(ChunkModel)
         if document_id:
-            sql += " AND c.document_id = :document_id"
-            params["document_id"] = document_id
-        
+            q = q.filter(ChunkModel.document_id == document_id)
         if filters:
             if "chunk_type" in filters:
-                sql += " AND c.chunk_type = :chunk_type"
-                params["chunk_type"] = filters["chunk_type"]
+                q = q.filter(ChunkModel.chunk_type == filters["chunk_type"])
             if "has_arabic" in filters:
-                sql += " AND c.has_arabic = :has_arabic"
-                params["has_arabic"] = filters["has_arabic"]
-        
-        sql += f" ORDER BY keyword_count DESC LIMIT {top_k}"
-        
-        result = self.session.execute(text(sql), params)
-        rows = result.fetchall()
-        
-        chunks = []
-        for row in rows:
-            chunk = ChunkModel(
-                id=row.id,
-                document_id=row.document_id,
-                content=row.content,
-                chunk_index=row.chunk_index,
-                page_number=row.page_number,
-                chunk_type=row.chunk_type,
-                heading=row.heading,
-                token_count=row.token_count,
-                char_count=row.char_count,
-                has_arabic=row.has_arabic,
-                has_diacritics=row.has_diacritics,
-                embedding=row.embedding,
-                created_at=row.created_at,
-            )
-            chunks.append(chunk)
-        
-        return chunks
+                q = q.filter(ChunkModel.has_arabic == filters["has_arabic"])
+        candidates: List[ChunkModel] = q.all()
+
+        def score_chunk(c: ChunkModel) -> int:
+            raw = (c.content or "")
+            norm = remove_diacritics(raw)
+            norm = re.sub(r"[^\w\s]", " ", norm, flags=re.UNICODE)
+            norm = norm.lower()
+            nk = [re.sub(r"[^\w\s]", " ", remove_diacritics(k)).lower() for k in keywords]
+            return sum(norm.count(k) for k in nk if k)
+
+        ranked = sorted(candidates, key=score_chunk, reverse=True)
+        return ranked[:top_k]
+
+        # (Unreachable legacy SQL path removed for portability)
 
     def _combine_results(
         self,
